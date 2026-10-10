@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import "PanelStyle.js" as PanelStyle
 
 Item {
@@ -19,7 +20,7 @@ Item {
     readonly property int trailingBodyInset: flushTrailing ? 0 : contentInset
     default property alias panelContent: contents.data
 
-    Item {
+    data: [Item {
         id: reveal
         width: surface.vertical ? surface.width * surface.progress : surface.width
         height: surface.vertical ? surface.height : surface.height * surface.progress
@@ -27,47 +28,36 @@ Item {
         y: surface.edge === "bottom" ? surface.height - height : 0
         clip: true
 
-        Canvas {
+        Shape {
             id: outline
-            anchors.fill: parent
-            antialiasing: true
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Connections {
-                target: surface
-                function onColorChanged() { outline.requestPaint(); }
-                function onEdgeChanged() { outline.requestPaint(); }
-                function onFlushLeadingChanged() { outline.requestPaint(); }
-                function onFlushTrailingChanged() { outline.requestPaint(); }
+            width: surface.vertical ? reveal.height : reveal.width
+            height: surface.vertical ? reveal.width : reveal.height
+            x: surface.edge === "bottom" || surface.edge === "right" ? reveal.width : 0
+            y: surface.edge === "bottom" || surface.edge === "left" ? reveal.height : 0
+            transform: Rotation {
+                angle: surface.edge === "bottom" ? 180 : surface.edge === "left" ? -90 : surface.edge === "right" ? 90 : 0
             }
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.reset();
-                var w = surface.vertical ? height : width;
-                var h = surface.vertical ? width : height;
-                if (w <= 0 || h <= 0) return;
-                if (surface.edge === "bottom") { ctx.translate(width, height); ctx.rotate(Math.PI); }
-                else if (surface.edge === "left") { ctx.translate(0, height); ctx.rotate(-Math.PI / 2); }
-                else if (surface.edge === "right") { ctx.translate(width, 0); ctx.rotate(Math.PI / 2); }
+            antialiasing: true
+            // Scene-graph geometry stays reactive even while hidden; unlike a
+            // Canvas texture, it cannot miss a theme/color repaint request.
+            ShapePath {
+                strokeWidth: -1
+                fillColor: surface.color
+                PathSvg { path: {
+                var w = outline.width;
+                var h = outline.height;
+                if (w <= 0 || h <= 0) return "";
                 var r = Math.min(surface.contentInset, w / 4, h / 2);
                 var reversed = surface.edge === "bottom" || surface.edge === "left";
                 var startInset = (reversed ? surface.flushTrailing : surface.flushLeading) ? 0 : r;
                 var endInset = (reversed ? surface.flushLeading : surface.flushTrailing) ? 0 : r;
                 // The two inward curves join the sheet to the bar; the outer
                 // corners remain rounded as the sheet unfolds.
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(w, 0);
-                ctx.quadraticCurveTo(w - endInset, 0, w - endInset, endInset);
-                ctx.lineTo(w - endInset, h - endInset);
-                ctx.quadraticCurveTo(w - endInset, h, w - 2 * endInset, h);
-                ctx.lineTo(2 * startInset, h);
-                ctx.quadraticCurveTo(startInset, h, startInset, h - startInset);
-                ctx.lineTo(startInset, startInset);
-                ctx.quadraticCurveTo(startInset, 0, 0, 0);
-                ctx.closePath();
-                ctx.fillStyle = surface.color;
-                ctx.fill();
+                return "M 0 0 L " + w + " 0 Q " + (w-endInset) + " 0 " + (w-endInset) + " " + endInset
+                    + " L " + (w-endInset) + " " + (h-endInset) + " Q " + (w-endInset) + " " + h + " " + (w-2*endInset) + " " + h
+                    + " L " + (2*startInset) + " " + h + " Q " + startInset + " " + h + " " + startInset + " " + (h-startInset)
+                    + " L " + startInset + " " + startInset + " Q " + startInset + " 0 0 0 Z";
+                } }
             }
         }
 
@@ -80,5 +70,5 @@ Item {
             y: surface.contentInset + (surface.vertical ? (surface.leadingBodyInset - surface.trailingBodyInset) / 2 : 0) + (surface.edge === "bottom" ? reveal.height - surface.height : 0)
             opacity: Math.min(1, surface.progress * 2)
         }
-    }
+    }]
 }
