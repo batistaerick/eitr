@@ -30,12 +30,10 @@ submenu = "javascript-tools"
 
 [[entries]]
 text = "Pacman"
-subtext = "Official packages · requires no pending updates · Tab select · Enter install · Ctrl+B review"
 icon = "󰏖"
 actions = { open = "python3 $HOME/.config/walker/scripts/actions/install/software.py picker-launch pacman" }
 
 [[entries]]
 text = "Yay (AUR)"
-subtext = "Community builds · Tab select · Enter install · Ctrl+B review"
 icon = "󰀦"
 actions = { open = "python3 $HOME/.config/walker/scripts/actions/install/software.py picker-launch aur" }

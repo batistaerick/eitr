@@ -11,6 +11,10 @@ def menu(name):
 
 
 class MenuStructureTests(unittest.TestCase):
+    def test_install_rows_only_have_titles_and_submenu_arrows(self):
+        for entry in menu("install")["entries"]:
+            self.assertEqual(entry.get("subtext", ""), ">" if entry.get("submenu") else "")
+
     def test_submenus_are_alphabetical(self):
         for path in MENUS.glob("*.toml"):
             if path.stem == "main":
